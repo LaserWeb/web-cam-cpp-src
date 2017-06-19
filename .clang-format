@@ -1,0 +1,7 @@
+BasedOnStyle: WebKit
+AlignAfterOpenBracket: AlwaysBreak
+AlignTrailingComments: true
+AllowShortFunctionsOnASingleLine: Empty
+AlwaysBreakTemplateDeclarations: true
+ColumnLimit: 120
+ReflowComments: false

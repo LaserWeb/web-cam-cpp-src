@@ -4,19 +4,19 @@
 // it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include <boost/polygon/polygon.hpp>
 #include <algorithm>
+#include <boost/polygon/polygon.hpp>
 #include <type_traits>
 
 namespace FlexScan {
@@ -24,56 +24,61 @@ namespace FlexScan {
 namespace bp = boost::polygon;
 
 // Combine less comparitors
-template<typename T, typename Less0, typename... TLess>
+template <typename T, typename Less0, typename... TLess>
 bool combineLess(const T& a, const T& b, const Less0& less0, const TLess&... less)
 {
     return less0(a, b) || !less0(b, a) && combineLess(a, b, less...);
 }
 
-template<typename T>
+template <typename T>
 bool combineLess(const T& a, const T& b)
 {
     return false;
 }
 
-template<typename Unit>
+template <typename Unit>
 using ManhattanAreaFromUnit_t = typename bp::coordinate_traits<Unit>::manhattan_area_type;
 
-template<typename Point>
+template <typename Point>
 using UnitFromPoint_t = typename bp::point_traits<Point>::coordinate_type;
 
-template<typename Point>
+template <typename Point>
 using ManhattanAreaFromPoint_t = ManhattanAreaFromUnit_t<UnitFromPoint_t<Point>>;
 
-template<typename Polygon>
-using PointFromPolygon_t = typename std::remove_const<typename std::remove_reference<decltype(*std::declval<Polygon>().begin())>::type>::type;
+template <typename Polygon>
+using PointFromPolygon_t =
+    typename std::remove_const<typename std::remove_reference<decltype(*std::declval<Polygon>().begin())>::type>::type;
 
-template<typename Polygon>
+template <typename Polygon>
 using UnitFromPolygon_t = UnitFromPoint_t<PointFromPolygon_t<Polygon>>;
 
-template<typename PolygonSet>
-using PolygonFromPolygonSet_t = typename std::remove_const<typename std::remove_reference<decltype(*std::declval<PolygonSet>().begin())>::type>::type;
+template <typename PolygonSet>
+using PolygonFromPolygonSet_t = typename std::remove_const<
+    typename std::remove_reference<decltype(*std::declval<PolygonSet>().begin())>::type>::type;
 
-template<typename PolygonSet>
+template <typename PolygonSet>
 using PointFromPolygonSet_t = PointFromPolygon_t<PolygonFromPolygonSet_t<PolygonSet>>;
 
-template<typename PolygonSet>
+template <typename PolygonSet>
 using UnitFromPolygonSet_t = UnitFromPolygon_t<PolygonFromPolygonSet_t<PolygonSet>>;
 
-template<typename Iterator>
-using ObjectFromIterator_t = typename std::remove_const<typename std::remove_reference<decltype(*std::declval<Iterator>())>::type>::type;
+template <typename Iterator>
+using ObjectFromIterator_t =
+    typename std::remove_const<typename std::remove_reference<decltype(*std::declval<Iterator>())>::type>::type;
 
-static double deltaAngleForError(double e, double r) {
-    e = std::min(r/2, e);
-    return acos(2*(1-e/r)*(1-e/r)-1);
+static double deltaAngleForError(double e, double r)
+{
+    e = std::min(r / 2, e);
+    return acos(2 * (1 - e / r) * (1 - e / r) - 1);
 }
 
-template<typename Point>
-static ManhattanAreaFromPoint_t<Point> dot(const Point& a, const Point& b) {
-    return ManhattanAreaFromPoint_t<Point>{x(a)}*x(b) + ManhattanAreaFromPoint_t<Point>{y(a)}*y(b);
+template <typename Point>
+static ManhattanAreaFromPoint_t<Point> dot(const Point& a, const Point& b)
+{
+    return ManhattanAreaFromPoint_t<Point>{ x(a) } * x(b) + ManhattanAreaFromPoint_t<Point>{ y(a) } * y(b);
 }
 
-template<typename TPoint, template<typename Derived> class... Bases>
+template <typename TPoint, template <typename Derived> class... Bases>
 struct Edge : Bases<Edge<TPoint, Bases...>>... {
     using Point = TPoint;
 
@@ -86,13 +91,14 @@ struct Edge : Bases<Edge<TPoint, Bases...>>... {
     int deltaWindingNumber = 0;
 
     // Constructor reorders points and adjusts deltaWindingNumber if clean == true
-    Edge(Point point1, Point point2, bool clean) :
-        point1(point1),
-        point2(point2),
-        deltaWindingNumber(1)
+    Edge(Point point1, Point point2, bool clean)
+        : point1(point1)
+        , point2(point2)
+        , deltaWindingNumber(1)
     {
         if (clean) {
-            if (x(this->point1) > x(this->point2) || x(this->point1) == x(this->point2) && y(this->point1) > y(this->point2)) {
+            if (x(this->point1) > x(this->point2)
+                || x(this->point1) == x(this->point2) && y(this->point1) > y(this->point2)) {
                 std::swap(this->point1, this->point2);
                 this->deltaWindingNumber *= -1;
             }
@@ -109,25 +115,26 @@ struct Edge : Bases<Edge<TPoint, Bases...>>... {
 };
 
 // Are point1 and point2 swapped from their original order?
-template<typename Edge>
-bool swapped(const Edge& edge) {
+template <typename Edge>
+bool swapped(const Edge& edge)
+{
     int i = edge.deltaWindingNumber;
     if (x(edge.point1) == x(edge.point2))
         i = -i;
     return i < 0;
 }
 
-template<typename Derived>
+template <typename Derived>
 struct EdgeId {
     int id = 0;
 };
 
-template<typename Derived>
+template <typename Derived>
 struct EdgeNext {
     Derived* next = nullptr;
 };
 
-template<typename TEdge, template<typename Derived> class... Bases>
+template <typename TEdge, template <typename Derived> class... Bases>
 struct ScanlineEdge : Bases<ScanlineEdge<TEdge, Bases...>>... {
     using Edge = TEdge;
     using Point = typename Edge::Point;
@@ -140,8 +147,8 @@ struct ScanlineEdge : Bases<ScanlineEdge<TEdge, Bases...>>... {
     bool atPoint1 = false;
     bool atPoint2 = false;
 
-    explicit ScanlineEdge(Edge* edge = nullptr) :
-        edge(edge)
+    explicit ScanlineEdge(Edge* edge = nullptr)
+        : edge(edge)
     {
     }
 
@@ -151,24 +158,24 @@ struct ScanlineEdge : Bases<ScanlineEdge<TEdge, Bases...>>... {
     ScanlineEdge& operator=(ScanlineEdge&&) = default;
 };
 
-template<typename Derived>
+template <typename Derived>
 struct ScanlineEdgeExclude {
     bool exclude = false;
 };
 
-template<typename Derived>
+template <typename Derived>
 struct ScanlineEdgeWindingNumber {
     int windingNumberBefore = 0;
     int windingNumberAfter = 0;
 };
 
-template<typename Derived>
+template <typename Derived>
 struct ScanlineEdgeWindingNumber2 {
     int windingNumberBefore2 = 0;
     int windingNumberAfter2 = 0;
 };
 
-template<typename TScanlineEdge>
+template <typename TScanlineEdge>
 struct Scan {
     using ScanlineEdge = TScanlineEdge;
     using Edge = typename ScanlineEdge::Edge;
@@ -182,7 +189,7 @@ struct Scan {
     // Use 2: ignore extra data in Point when comparing
     static ScanlineBasePoint toScanlineBasePoint(Point p)
     {
-        return{x(p), y(p)};
+        return { x(p), y(p) };
     }
 
     static Unit dx(const Edge& e)
@@ -218,38 +225,42 @@ struct Scan {
         return x(e1.point1) < x(e2.point1);
     }
 
-    template<typename Container, typename It>
-    static void insertPolygons(Container& dest, It begin, It end, bool closed = true, bool allowZeroLength = false) {
+    template <typename Container, typename It>
+    static void insertPolygons(Container& dest, It begin, It end, bool closed = true, bool allowZeroLength = false)
+    {
         for (auto it = begin; it < end; ++it)
             insertPoints(dest, it->begin(), it->end(), closed, allowZeroLength);
     }
 
-    template<typename Container, typename SrcContainer>
-    static void insertPoints(Container& dest, const SrcContainer& src, bool closed = true, bool allowZeroLength = false) {
+    template <typename Container, typename SrcContainer>
+    static void insertPoints(Container& dest, const SrcContainer& src, bool closed = true, bool allowZeroLength = false)
+    {
         insertPoints(dest, src.begin(), src.end(), closed, allowZeroLength);
     }
 
-    template<typename Container, typename It>
-    static void insertPoints(Container& dest, It begin, It end, bool closed = true, bool allowZeroLength = false) {
+    template <typename Container, typename It>
+    static void insertPoints(Container& dest, It begin, It end, bool closed = true, bool allowZeroLength = false)
+    {
         using InputPoint = ObjectFromIterator_t<It>;
         size_t size = end - begin;
         for (size_t i = 0; i < size; ++i) {
             const InputPoint* p1 = &begin[i];
             const InputPoint* p2;
-            if (i+1 < size)
-                p2 = &begin[i+1];
+            if (i + 1 < size)
+                p2 = &begin[i + 1];
             else if (closed)
                 p2 = &begin[0];
             else
                 break;
             if (allowZeroLength || toScanlineBasePoint(*p1) != toScanlineBasePoint(*p2))
-                dest.push_back({*p1, *p2, true});
+                dest.push_back({ *p1, *p2, true });
         }
     };
 
     // Split edges at intersections
-    template<typename Container, typename It>
-    static void intersectEdges(Container& dest, It begin, It end) {
+    template <typename Container, typename It>
+    static void intersectEdges(Container& dest, It begin, It end)
+    {
         // boost.polygon's authors should be banned from using pair for life.
         //                   <         <      p1,                 p2        >,     <property, deltaWindingNumber> >    I'm using property to hold index.
         std::vector<std::pair<std::pair<ScanlineBasePoint, ScanlineBasePoint>, std::pair<int, int>>> segments;
@@ -261,13 +272,13 @@ struct Scan {
                 std::make_pair(i, begin[i].deltaWindingNumber)));
         }
 
-        std::vector<std::pair<std::pair<ScanlineBasePoint, ScanlineBasePoint>, std::pair<int, int>> > intersected;
+        std::vector<std::pair<std::pair<ScanlineBasePoint, ScanlineBasePoint>, std::pair<int, int>>> intersected;
         intersected.reserve(size);
         bp::line_intersection<Unit>::validate_scan(intersected, segments.begin(), segments.end());
 
         Container result;
         result.reserve(intersected.size());
-        for (auto& segment: intersected) {
+        for (auto& segment : intersected) {
             auto edge = begin[segment.second.first];
             x(edge.point1, x(segment.first.first));
             y(edge.point1, y(segment.first.first));
@@ -280,40 +291,39 @@ struct Scan {
         dest = move(result);
     }
 
-    template<typename EdgeIt>
-    static void sortEdges(EdgeIt begin, EdgeIt end) {
+    template <typename EdgeIt>
+    static void sortEdges(EdgeIt begin, EdgeIt end)
+    {
         std::sort(begin, end, lessEdge);
     }
 
     static bool lessScanlineEdge(const ScanlineEdge& e1, const ScanlineEdge& e2)
     {
         return combineLess(
-            e1, e2,
-            [](const ScanlineEdge& e1, const ScanlineEdge& e2){return e1.yIntercept < e2.yIntercept; },
-            [](const ScanlineEdge& e1, const ScanlineEdge& e2){return e1.atEndpoint < e2.atEndpoint; },
+            e1, e2,                                                                                       //
+            [](const ScanlineEdge& e1, const ScanlineEdge& e2) { return e1.yIntercept < e2.yIntercept; }, //
+            [](const ScanlineEdge& e1, const ScanlineEdge& e2) { return e1.atEndpoint < e2.atEndpoint; }, //
             LessSlope{});
     }
 
-    template<typename It, typename Callback0, typename... Callback>
-    static void callCallback(Unit scanX, HighPrecision scanY, It begin, It end, const Callback0& callback0, const Callback&... callback)
+    template <typename It, typename Callback0, typename... Callback>
+    static void callCallback(
+        Unit scanX, HighPrecision scanY, It begin, It end, const Callback0& callback0, const Callback&... callback)
     {
         //printf("   ...\n");
         callback0(scanX, scanY, begin, end);
         callCallback(scanX, scanY, begin, end, callback...);
     }
 
-    template<typename It>
+    template <typename It>
     static void callCallback(Unit scanX, HighPrecision scanY, It begin, It end)
     {
         //printf("   end\n");
     }
 
     // Scan edges. Edges must not have any intersections and must already be sorted using lessEdge.
-    template<typename EdgeIt, typename... Callback>
-    static void scan(
-        EdgeIt edgeBegin,
-        EdgeIt edgeEnd,
-        Callback... callback)
+    template <typename EdgeIt, typename... Callback>
+    static void scan(EdgeIt edgeBegin, EdgeIt edgeEnd, Callback... callback)
     {
         const bool debug = false;
         if (edgeBegin == edgeEnd)
@@ -323,18 +333,20 @@ struct Scan {
         std::vector<ScanlineEdge> scanlineEdges;
         while (edgeBegin != edgeEnd || !scanlineEdges.empty()) {
             while (edgeBegin != edgeEnd && x(edgeBegin->point1) == scanX) {
-                ScanlineEdge sledge{&*edgeBegin};
+                ScanlineEdge sledge{ &*edgeBegin };
                 sledge.atPoint1 = true;
                 scanlineEdges.push_back(sledge);
                 if (debug) {
-                    printf("add: (%d, %d), (%d, %d) %s\n",
-                        x(edgeBegin->point1), y(edgeBegin->point1), x(edgeBegin->point2), y(edgeBegin->point2),
+                    printf(
+                        "add: (%d, %d), (%d, %d) %s\n",             //
+                        x(edgeBegin->point1), y(edgeBegin->point1), //
+                        x(edgeBegin->point2), y(edgeBegin->point2), //
                         x(edgeBegin->point1) == x(edgeBegin->point2) ? "vertical" : "");
                 }
                 ++edgeBegin;
             }
 
-            for (auto& scanlineEdge: scanlineEdges) {
+            for (auto& scanlineEdge : scanlineEdges) {
                 auto& edge = *scanlineEdge.edge;
                 scanlineEdge.yIntercept = getYIntercept(scanX, edge);
                 scanlineEdge.atEndpoint = scanX == x(edge.point1) || scanX == x(edge.point2);
@@ -344,15 +356,16 @@ struct Scan {
 
             if (debug) {
                 printf("\nscan line:\n");
-                for (auto& e: scanlineEdges) {
-                    printf("    atEndpoint: %d, atPoint1: %d?, atPoint2: %d? (%d, %d), (%d, %d) %s\n",
-                        e.atEndpoint, e.atPoint1, e.atPoint2,
-                        x(e.edge->point1), y(e.edge->point1), x(e.edge->point2), y(e.edge->point2),
-                        x(e.edge->point1) == x(e.edge->point2) ? "vertical" : "");
+                for (auto& e : scanlineEdges) {
+                    printf(
+                        "    atEndpoint: %d, atPoint1: %d?, atPoint2: %d? (%d, %d), (%d, %d) %s\n", //
+                        e.atEndpoint, e.atPoint1, e.atPoint2,                                       //
+                        x(e.edge->point1), y(e.edge->point1), x(e.edge->point2), y(e.edge->point2), //
+                        x(e.edge->point1) == x(e.edge->point2) ? "vertical" : "");                  //
                 }
-                for (size_t i = 0; i < scanlineEdges.size()-1; ++i) {
-                    printf("\n%d < %d?  %d\n", i, i+1, LessSlope{}(scanlineEdges[i], scanlineEdges[i+1]));
-                    printf("%d < %d?  %d\n", i+1, i, LessSlope{}(scanlineEdges[i+1], scanlineEdges[i]));
+                for (size_t i = 0; i < scanlineEdges.size() - 1; ++i) {
+                    printf("\n%d < %d?  %d\n", i, i + 1, LessSlope{}(scanlineEdges[i], scanlineEdges[i + 1]));
+                    printf("%d < %d?  %d\n", i + 1, i, LessSlope{}(scanlineEdges[i + 1], scanlineEdges[i]));
                 }
             }
 
@@ -375,7 +388,8 @@ struct Scan {
                 }
                 //printf("call\n");
                 callCallback(scanX, scanlineEdgeIt->yIntercept, scanlineEdgeIt, e, callback...);
-                while (scanlineEdgeIt < e && (x(scanlineEdgeIt->edge->point1) != x(scanlineEdgeIt->edge->point2) || scanlineEdgeIt->atPoint2))
+                while (scanlineEdgeIt < e && //
+                       (x(scanlineEdgeIt->edge->point1) != x(scanlineEdgeIt->edge->point2) || scanlineEdgeIt->atPoint2))
                     ++scanlineEdgeIt;
                 for (auto it = scanlineEdgeIt; it < e; ++it) {
                     it->yIntercept = y(it->edge->point2);
@@ -385,22 +399,24 @@ struct Scan {
             }
 
             if (debug) {
-                for (auto& e: scanlineEdges) {
+                for (auto& e : scanlineEdges) {
                     if (e.atPoint2) {
-                        printf("drop atEndpoint: %d, atPoint1: %d, atPoint2: %d (%d, %d), (%d, %d) %s\n",
-                            e.atEndpoint, e.atPoint1, e.atPoint2,
-                            x(e.edge->point1), y(e.edge->point1), x(e.edge->point2), y(e.edge->point2),
+                        printf(
+                            "drop atEndpoint: %d, atPoint1: %d, atPoint2: %d (%d, %d), (%d, %d) %s\n",  //
+                            e.atEndpoint, e.atPoint1, e.atPoint2,                                       //
+                            x(e.edge->point1), y(e.edge->point1), x(e.edge->point2), y(e.edge->point2), //
                             x(e.edge->point1) == x(e.edge->point2) ? "vertical" : "");
                     }
                 }
             }
 
             scanlineEdges.erase(
-                std::remove_if(scanlineEdges.begin(), scanlineEdges.end(), [](const ScanlineEdge& e){return e.atPoint2; }),
+                std::remove_if(
+                    scanlineEdges.begin(), scanlineEdges.end(), [](const ScanlineEdge& e) { return e.atPoint2; }),
                 scanlineEdges.end());
 
             scanX = std::numeric_limits<Unit>::max();
-            for (auto& e: scanlineEdges)
+            for (auto& e : scanlineEdges)
                 scanX = std::min(scanX, x(e.edge->point2));
             if (edgeBegin != edgeEnd)
                 scanX = std::min(scanX, x(edgeBegin->point1));
@@ -409,7 +425,7 @@ struct Scan {
 }; // Scan
 
 struct ExcludeOppositeEdges {
-    template<typename Unit, typename HighPrecision, typename It>
+    template <typename Unit, typename HighPrecision, typename It>
     void operator()(Unit scanX, HighPrecision scanY, It begin, It end) const
     {
         using ScanlineEdge = ObjectFromIterator_t<It>;
@@ -421,7 +437,7 @@ struct ExcludeOppositeEdges {
                 ++begin;
             if (begin == end)
                 break;
-            for (auto otherIt = begin+1; otherIt != end; ++otherIt) {
+            for (auto otherIt = begin + 1; otherIt != end; ++otherIt) {
                 if (!otherIt->exclude && begin->edge->deltaWindingNumber == -otherIt->edge->deltaWindingNumber) {
                     // Only use X,Y for comparison
                     auto p1 = Scan::toScanlineBasePoint(begin->edge->point1);
@@ -443,13 +459,14 @@ struct ExcludeOppositeEdges {
 };
 
 struct NotExcluded {
-    template<typename ScanlineEdge>
-    bool operator()(ScanlineEdge& e) const {
+    template <typename ScanlineEdge>
+    bool operator()(ScanlineEdge& e) const
+    {
         return !e.exclude;
     }
 };
 
-template<typename WindingNumberBefore, typename WindingNumberAfter, typename Condition>
+template <typename WindingNumberBefore, typename WindingNumberAfter, typename Condition>
 struct AccumulateWindingNumber {
     WindingNumberBefore windingNumberBefore;
     WindingNumberAfter windingNumberAfter;
@@ -457,27 +474,27 @@ struct AccumulateWindingNumber {
     mutable int leftWindingNumber = 0;
     mutable int rightWindingNumber = 0;
 
-    AccumulateWindingNumber(WindingNumberBefore windingNumberBefore, WindingNumberAfter windingNumberAfter, Condition condition) :
-        windingNumberBefore(windingNumberBefore),
-        windingNumberAfter(windingNumberAfter),
-        condition(condition)
+    AccumulateWindingNumber(
+        WindingNumberBefore windingNumberBefore, WindingNumberAfter windingNumberAfter, Condition condition)
+        : windingNumberBefore(windingNumberBefore)
+        , windingNumberAfter(windingNumberAfter)
+        , condition(condition)
     {
     }
 
-    template<typename Unit, typename HighPrecision, typename It>
+    template <typename Unit, typename HighPrecision, typename It>
     void operator()(Unit scanX, HighPrecision scanY, It begin, It end) const
     {
         const bool debug = false;
 
         if (debug)
-            printf("AccumulateWindingNumber %d\n", end-begin);
+            printf("AccumulateWindingNumber %d\n", end - begin);
         while (begin != end) {
             // non-vertical
             while (begin != end && x(begin->edge->point1) != x(begin->edge->point2)) {
                 if (begin->atPoint1)
                     windingNumberBefore(*begin) = rightWindingNumber;
-                if (condition(*begin))
-                {
+                if (condition(*begin)) {
                     if (!begin->atPoint1)
                         leftWindingNumber += begin->edge->deltaWindingNumber;
                     if (!begin->atPoint2)
@@ -486,11 +503,12 @@ struct AccumulateWindingNumber {
                 if (begin->atPoint1)
                     windingNumberAfter(*begin) = rightWindingNumber;
                 if (debug) {
-                    printf(" %d -> %d : @(%d, %d) (%d, %d) (%d, %d) @1=%d @2=%d deltaWindingNumber=%d\n",
-                        windingNumberBefore(*begin), windingNumberAfter(*begin), begin->atPoint1, begin->atPoint2,
-                        x(begin->edge->point1), y(begin->edge->point1),
-                        x(begin->edge->point2), y(begin->edge->point2),
-                        begin->atPoint1, begin->atPoint2,
+                    printf(
+                        " %d -> %d : @(%d, %d) (%d, %d) (%d, %d) @1=%d @2=%d deltaWindingNumber=%d\n",             //
+                        windingNumberBefore(*begin), windingNumberAfter(*begin), begin->atPoint1, begin->atPoint2, //
+                        x(begin->edge->point1), y(begin->edge->point1),                                            //
+                        x(begin->edge->point2), y(begin->edge->point2),                                            //
+                        begin->atPoint1, begin->atPoint2,                                                          //
                         begin->edge->deltaWindingNumber);
                 }
                 ++begin;
@@ -498,32 +516,36 @@ struct AccumulateWindingNumber {
 
             // vertical
             bool atPoint1 = begin->atPoint1;
-            for (auto it = begin; it != end && x(it->edge->point1) == x(it->edge->point2) && it->atPoint1 == atPoint1; ++it) {
+            for (auto it = begin; it != end && x(it->edge->point1) == x(it->edge->point2) && it->atPoint1 == atPoint1;
+                 ++it) {
                 windingNumberBefore(*it) = leftWindingNumber;
                 if (condition(*it))
                     leftWindingNumber += it->edge->deltaWindingNumber;
                 windingNumberAfter(*it) = leftWindingNumber;
                 if (debug) {
-                    printf("[%d -> %d]: @(%d, %d) (%d, %d) (%d, %d) @1=%d @2=%d deltaWindingNumber=%d\n",
-                        windingNumberBefore(*it), windingNumberAfter(*it), it->atPoint1, it->atPoint2,
-                        x(it->edge->point1), y(it->edge->point1),
-                        x(it->edge->point2), y(it->edge->point2),
-                        it->atPoint1, it->atPoint2,
-                        it->edge->deltaWindingNumber);
+                    printf(
+                        "[%d -> %d]: @(%d, %d) (%d, %d) (%d, %d) @1=%d @2=%d deltaWindingNumber=%d\n", //
+                        windingNumberBefore(*it), windingNumberAfter(*it), it->atPoint1, it->atPoint2, //
+                        x(it->edge->point1), y(it->edge->point1),                                      //
+                        x(it->edge->point2), y(it->edge->point2),                                      //
+                        it->atPoint1, it->atPoint2,                                                    //
+                        it->edge->deltaWindingNumber);                                                 //
                 }
             }
 
             // undo vertical
-            for (auto it = begin; it != end && x(it->edge->point1) == x(it->edge->point2) && it->atPoint1 == atPoint1; ++it) {
+            for (auto it = begin; it != end && x(it->edge->point1) == x(it->edge->point2) && it->atPoint1 == atPoint1;
+                 ++it) {
                 if (condition(*it)) {
                     leftWindingNumber -= it->edge->deltaWindingNumber;
                     if (debug) {
-                        printf("prep: @(%d, %d) (%d, %d) (%d, %d) @1=%d @2=%d deltaWindingNumber=%d\n",
-                            it->atPoint1, it->atPoint2,
-                            x(it->edge->point1), y(it->edge->point1),
-                            x(it->edge->point2), y(it->edge->point2),
-                            it->atPoint1, it->atPoint2,
-                            it->edge->deltaWindingNumber);
+                        printf(
+                            "prep: @(%d, %d) (%d, %d) (%d, %d) @1=%d @2=%d deltaWindingNumber=%d\n", //
+                            it->atPoint1, it->atPoint2,                                              //
+                            x(it->edge->point1), y(it->edge->point1),                                //
+                            x(it->edge->point2), y(it->edge->point2),                                //
+                            it->atPoint1, it->atPoint2,                                              //
+                            it->edge->deltaWindingNumber);                                           //
                     }
                 }
             }
@@ -539,57 +561,67 @@ struct AccumulateWindingNumber {
 };
 
 struct DefaultWindingNumberBefore {
-    template<typename ScanlineEdge>
-    int& operator()(ScanlineEdge& e) const {
+    template <typename ScanlineEdge>
+    int& operator()(ScanlineEdge& e) const
+    {
         return e.windingNumberBefore;
     }
 };
 
 struct DefaultWindingNumberAfter {
-    template<typename ScanlineEdge>
-    int& operator()(ScanlineEdge& e) const {
+    template <typename ScanlineEdge>
+    int& operator()(ScanlineEdge& e) const
+    {
         return e.windingNumberAfter;
     }
 };
 
 struct DefaultWindingNumberBefore2 {
-    template<typename ScanlineEdge>
-    int& operator()(ScanlineEdge& e) const {
+    template <typename ScanlineEdge>
+    int& operator()(ScanlineEdge& e) const
+    {
         return e.windingNumberBefore2;
     }
 };
 
 struct DefaultWindingNumberAfter2 {
-    template<typename ScanlineEdge>
-    int& operator()(ScanlineEdge& e) const {
+    template <typename ScanlineEdge>
+    int& operator()(ScanlineEdge& e) const
+    {
         return e.windingNumberAfter2;
     }
 };
 
-template<typename WindingNumberBefore, typename WindingNumberAfter, typename Condition>
-AccumulateWindingNumber<WindingNumberBefore, WindingNumberAfter, Condition> makeAccumulateWindingNumber(WindingNumberBefore windingNumberBefore, WindingNumberAfter windingNumberAfter, Condition condition) {
-    return{windingNumberBefore, windingNumberAfter, condition};
+template <typename WindingNumberBefore, typename WindingNumberAfter, typename Condition>
+AccumulateWindingNumber<WindingNumberBefore, WindingNumberAfter, Condition> makeAccumulateWindingNumber(
+    WindingNumberBefore windingNumberBefore, WindingNumberAfter windingNumberAfter, Condition condition)
+{
+    return { windingNumberBefore, windingNumberAfter, condition };
 }
 
-template<typename Condition>
-AccumulateWindingNumber<DefaultWindingNumberBefore, DefaultWindingNumberAfter, Condition> makeAccumulateWindingNumber(Condition condition) {
-    return{DefaultWindingNumberBefore{}, DefaultWindingNumberAfter{}, condition};
+template <typename Condition>
+AccumulateWindingNumber<DefaultWindingNumberBefore, DefaultWindingNumberAfter, Condition>
+makeAccumulateWindingNumber(Condition condition)
+{
+    return { DefaultWindingNumberBefore{}, DefaultWindingNumberAfter{}, condition };
 }
 
-template<typename Condition>
-AccumulateWindingNumber<DefaultWindingNumberBefore2, DefaultWindingNumberAfter2, Condition> makeAccumulateWindingNumber2(Condition condition) {
-    return{DefaultWindingNumberBefore2{}, DefaultWindingNumberAfter2{}, condition};
+template <typename Condition>
+AccumulateWindingNumber<DefaultWindingNumberBefore2, DefaultWindingNumberAfter2, Condition>
+makeAccumulateWindingNumber2(Condition condition)
+{
+    return { DefaultWindingNumberBefore2{}, DefaultWindingNumberAfter2{}, condition };
 }
 
-template<typename ScanlineEdge, typename Condition, typename Combine>
+template <typename ScanlineEdge, typename Condition, typename Combine>
 struct CombinePairs {
 public:
     Condition condition;
     Combine combine;
 
-    CombinePairs(Condition condition, Combine combine) :
-        condition(condition),
-        combine(combine)
+    CombinePairs(Condition condition, Combine combine)
+        : condition(condition)
+        , combine(combine)
     {
     }
 
@@ -603,7 +635,8 @@ private:
 
     // negative: polygon travels from edge to scan point
     // positive: polygon travels from scan point to edge
-    static int getEdgeDirection(const ScanlineEdge& scanlineEdge) {
+    static int getEdgeDirection(const ScanlineEdge& scanlineEdge)
+    {
         int i = scanlineEdge.edge->deltaWindingNumber;
         if (scanlineEdge.atPoint2)
             i = -i;
@@ -613,12 +646,12 @@ private:
     }
 
 public:
-    template<typename Unit, typename HighPrecision, typename It>
+    template <typename Unit, typename HighPrecision, typename It>
     void operator()(Unit scanX, HighPrecision scanY, It begin, It end) const
     {
         //printf("CombinePairs %d\n", end-begin);
         candidates.clear();
-        candidates.reserve(end-begin);
+        candidates.reserve(end - begin);
         for (auto it = begin; it < end; ++it)
             if (it->atEndpoint && it->edge->deltaWindingNumber && condition(*it))
                 candidates.push_back(&*it);
@@ -627,7 +660,7 @@ public:
         size_t e = candidates.size();
         while (b != e) {
             int edgeDirection = getEdgeDirection(*candidates[b]);
-            auto other = e-1;
+            auto other = e - 1;
             while (other != b && getEdgeDirection(*candidates[other]) != -edgeDirection)
                 --other;
             if (other != b) {
@@ -637,8 +670,7 @@ public:
                     combine(*candidates[other], *candidates[b]);
                 --e;
                 candidates.erase(candidates.begin() + other);
-            }
-            else
+            } else
                 printf("!*!*!*!!!!*!*!! CombinePairs\n");
             ++b;
         }
@@ -646,22 +678,24 @@ public:
     }
 };
 
-template<typename ScanlineEdge, typename Condition, typename Combine>
-CombinePairs<ScanlineEdge, Condition, Combine> makeCombinePairs(Condition condition, Combine combine) {
-    return{condition, combine};
+template <typename ScanlineEdge, typename Condition, typename Combine>
+CombinePairs<ScanlineEdge, Condition, Combine> makeCombinePairs(Condition condition, Combine combine)
+{
+    return { condition, combine };
 }
 
 struct PositiveWinding {
-    template<typename ScanlineEdge>
-    bool operator()(const ScanlineEdge& e) const{
-        return !e.exclude && (
-            e.windingNumberBefore == 0 && e.windingNumberAfter == 1 ||
-            e.windingNumberBefore == 1 && e.windingNumberAfter == 0);
+    template <typename ScanlineEdge>
+    bool operator()(const ScanlineEdge& e) const
+    {
+        return !e.exclude && (e.windingNumberBefore == 0 && e.windingNumberAfter == 1
+                              || e.windingNumberBefore == 1 && e.windingNumberAfter == 0);
     }
 };
 
-template<typename PolygonSet, typename It>
-void fillPolygonSetFromEdges(PolygonSet& ps, It begin, It end) {
+template <typename PolygonSet, typename It>
+void fillPolygonSetFromEdges(PolygonSet& ps, It begin, It end)
+{
     while (begin != end) {
         if (begin->next) {
             //printf("\n");
@@ -678,8 +712,7 @@ void fillPolygonSetFromEdges(PolygonSet& ps, It begin, It end) {
                         polygon.emplace_back(edge->point2);
                     else
                         polygon.emplace_back(edge->point1);
-                }
-                else
+                } else
                     break;
             }
         }
@@ -687,8 +720,9 @@ void fillPolygonSetFromEdges(PolygonSet& ps, It begin, It end) {
     }
 }
 
-template<typename PolygonSet, typename Winding>
-PolygonSet cleanPolygonSet(const PolygonSet& ps, Winding winding) {
+template <typename PolygonSet, typename Winding>
+PolygonSet cleanPolygonSet(const PolygonSet& ps, Winding winding)
+{
     using Point = PointFromPolygonSet_t<PolygonSet>;
     using Edge = Edge<Point, EdgeNext>;
     using ScanlineEdge = ScanlineEdge<Edge, ScanlineEdgeExclude, ScanlineEdgeWindingNumber>;
@@ -700,24 +734,26 @@ PolygonSet cleanPolygonSet(const PolygonSet& ps, Winding winding) {
     Scan::intersectEdges(edges, edges.begin(), edges.end());
     Scan::sortEdges(edges.begin(), edges.end());
     Scan::scan(
-        edges.begin(), edges.end(),
-        ExcludeOppositeEdges{},
-        makeAccumulateWindingNumber(NotExcluded{}),
-        makeCombinePairs<ScanlineEdge>(winding, [](ScanlineEdge& a, ScanlineEdge& b){a.edge->next = b.edge; }));
+        edges.begin(), edges.end(),                 //
+        ExcludeOppositeEdges{},                     //
+        makeAccumulateWindingNumber(NotExcluded{}), //
+        makeCombinePairs<ScanlineEdge>(winding, [](ScanlineEdge& a, ScanlineEdge& b) { a.edge->next = b.edge; }));
 
     PolygonSet result;
     fillPolygonSetFromEdges(result, edges.begin(), edges.end());
     return result;
 }
 
-template<typename CompareWinding>
+template <typename CompareWinding>
 struct CombinePolygonSetCondition {
     CompareWinding compareWinding;
 
-    template<typename ScanlineEdge>
-    bool operator()(ScanlineEdge& e) const {
+    template <typename ScanlineEdge>
+    bool operator()(ScanlineEdge& e) const
+    {
         // 2 overlapping edges? keep only one.
-        if (e.edge->id && e.windingNumberAfter != e.windingNumberBefore && e.windingNumberAfter2 != e.windingNumberBefore2)
+        if (e.edge->id && e.windingNumberAfter != e.windingNumberBefore
+            && e.windingNumberAfter2 != e.windingNumberBefore2)
             return false;
         bool before = compareWinding(e.windingNumberBefore, e.windingNumberBefore2);
         bool after = compareWinding(e.windingNumberAfter, e.windingNumberAfter2);
@@ -725,13 +761,15 @@ struct CombinePolygonSetCondition {
     }
 };
 
-template<typename CompareWinding>
-CombinePolygonSetCondition<CompareWinding> makeCombinePolygonSetCondition(CompareWinding compareWinding) {
-    return{compareWinding};
+template <typename CompareWinding>
+CombinePolygonSetCondition<CompareWinding> makeCombinePolygonSetCondition(CompareWinding compareWinding)
+{
+    return { compareWinding };
 }
 
-template<typename PolygonSet, typename Condition>
-PolygonSet combinePolygonSet(const PolygonSet& ps1, const PolygonSet& ps2, Condition condition) {
+template <typename PolygonSet, typename Condition>
+PolygonSet combinePolygonSet(const PolygonSet& ps1, const PolygonSet& ps2, Condition condition)
+{
     using Point = PointFromPolygonSet_t<PolygonSet>;
     using Edge = Edge<Point, EdgeId, EdgeNext>;
     using ScanlineEdge = ScanlineEdge<Edge, ScanlineEdgeWindingNumber, ScanlineEdgeWindingNumber2>;
@@ -747,10 +785,10 @@ PolygonSet combinePolygonSet(const PolygonSet& ps1, const PolygonSet& ps2, Condi
     Scan::intersectEdges(edges, edges.begin(), edges.end());
     Scan::sortEdges(edges.begin(), edges.end());
     Scan::scan(
-        edges.begin(), edges.end(),
-        makeAccumulateWindingNumber([](const ScanlineEdge& e){return e.edge->id == 0; }),
-        makeAccumulateWindingNumber2([](const ScanlineEdge& e){return e.edge->id == 1; }),
-        makeCombinePairs<ScanlineEdge>(condition, [](ScanlineEdge& a, ScanlineEdge& b){a.edge->next = b.edge; }));
+        edges.begin(), edges.end(),                                                          //
+        makeAccumulateWindingNumber([](const ScanlineEdge& e) { return e.edge->id == 0; }),  //
+        makeAccumulateWindingNumber2([](const ScanlineEdge& e) { return e.edge->id == 1; }), //
+        makeCombinePairs<ScanlineEdge>(condition, [](ScanlineEdge& a, ScanlineEdge& b) { a.edge->next = b.edge; }));
 
     PolygonSet result;
     fillPolygonSetFromEdges(result, edges.begin(), edges.end());

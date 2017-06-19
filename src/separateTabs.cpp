@@ -4,12 +4,12 @@
 // it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -22,7 +22,7 @@ using namespace cam;
 using namespace FlexScan;
 using namespace std;
 
-template<typename Derived>
+template <typename Derived>
 struct TabsEdge {
     bool isCutPath = false;
     bool isOverTab = false;
@@ -31,7 +31,7 @@ struct TabsEdge {
 };
 
 struct SetIsOverTab {
-    template<typename Unit, typename HighPrecision, typename It>
+    template <typename Unit, typename HighPrecision, typename It>
     void operator()(Unit x, HighPrecision y, It begin, It end) const
     {
         while (begin != end) {
@@ -44,9 +44,9 @@ struct SetIsOverTab {
 };
 
 extern "C" void separateTabs(
-    double** pathPolygons, int numPaths, int* pathSizes,
-    double** tabPolygons, int numTabPolygons, int* tabPolygonSizes,
-    int& error,
+    double** pathPolygons, int numPaths, int* pathSizes,            //
+    double** tabPolygons, int numTabPolygons, int* tabPolygonSizes, //
+    int& error,                                                     //
     double**& resultPaths, int& resultNumPaths, int*& resultPathSizes)
 {
     try {
@@ -70,7 +70,7 @@ extern "C" void separateTabs(
 
         std::vector<Edge> edges;
         Scan::insertPolygons(edges, paths.begin(), paths.end(), false);
-        for (auto& e: edges)
+        for (auto& e : edges)
             e.isCutPath = true;
         //printf("cut size: %d\n", edges.size());
         Scan::insertPolygons(edges, tabs.begin(), tabs.end(), true);
@@ -80,21 +80,21 @@ extern "C" void separateTabs(
         Scan::intersectEdges(edges, edges.begin(), edges.end());
         Scan::sortEdges(edges.begin(), edges.end());
         Scan::scan(
-            edges.begin(), edges.end(),
-            makeAccumulateWindingNumber([](ScanlineEdge& e){return !e.edge->isCutPath; }),
+            edges.begin(), edges.end(),                                                      //
+            makeAccumulateWindingNumber([](ScanlineEdge& e) { return !e.edge->isCutPath; }), //
             SetIsOverTab{});
 
-        sort(edges.begin(), edges.end(), [](const Edge& a, const Edge& b){
+        sort(edges.begin(), edges.end(), [](const Edge& a, const Edge& b) {
             return combineLess(
-                a, b,
-                [](const Edge& a, const Edge& b){return (!a.isCutPath) < (!b.isCutPath); },
-                [](const Edge& a, const Edge& b){return a.index < b.index; });
+                a, b, //
+                [](const Edge& a, const Edge& b) { return (!a.isCutPath) < (!b.isCutPath); },
+                [](const Edge& a, const Edge& b) { return a.index < b.index; });
         });
-        for (auto& edge: edges)
+        for (auto& edge : edges)
             if (swapped(edge))
                 swap(edge.point1, edge.point2);
 
-        PolygonSet result{{}};
+        PolygonSet result{ {} };
         bool isOverTab = false;
         Point currentPoint = paths[0][0];
         auto pos = edges.begin();
@@ -136,11 +136,9 @@ extern "C" void separateTabs(
 
         //printf("separateTabs: %d\n", result.size());
         convertPathsToC(resultPaths, resultNumPaths, resultPathSizes, result);
-    }
-    catch (exception& e) {
+    } catch (exception& e) {
         printf("%s\n", e.what());
-    }
-    catch (...) {
+    } catch (...) {
         printf("???? unknown exception\n");
     }
 };

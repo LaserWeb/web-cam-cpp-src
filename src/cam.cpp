@@ -4,12 +4,12 @@
 // it under the terms of the GNU Affero General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Affero General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -21,9 +21,8 @@ using namespace cam;
 
 // Convert paths to C format
 void cam::convertPathsToC(
-    double**& cPaths, int& cNumPaths, int*& cPathSizes,
-    const PolygonSet& paths, bool includeDummyZ
-    )
+    double**& cPaths, int& cNumPaths, int*& cPathSizes, //
+    const PolygonSet& paths, bool includeDummyZ)
 {
     int stride = includeDummyZ ? 3 : 2;
     cPaths = (double**)malloc(paths.size() * sizeof(double*));
@@ -39,19 +38,18 @@ void cam::convertPathsToC(
             pathStorage += 4;
         double* p = (double*)pathStorage;
         for (size_t j = 0; j < path.size(); ++j) {
-            p[j*stride] = x(path[j]);
-            p[j*stride+1] = y(path[j]);
+            p[j * stride] = x(path[j]);
+            p[j * stride + 1] = y(path[j]);
             if (includeDummyZ)
-                p[j*stride+2] = 0;
+                p[j * stride + 2] = 0;
         }
     }
 }
 
 // Convert paths to C format
 void cam::convertPathsToC(
-    double**& cPaths, int& cNumPaths, int*& cPathSizes,
-    const std::vector<std::vector<PointWithZ>>& paths
-    )
+    double**& cPaths, int& cNumPaths, int*& cPathSizes, //
+    const std::vector<std::vector<PointWithZ>>& paths)
 {
     printf("ma: %d->%d\n", paths.size(), paths.size() * sizeof(double*));
     cPaths = (double**)malloc(paths.size() * sizeof(double*));
@@ -69,17 +67,16 @@ void cam::convertPathsToC(
             pathStorage += 4;
         double* p = (double*)pathStorage;
         for (size_t j = 0; j < path.size(); ++j) {
-            p[j*3] = path[j].x;
-            p[j*3+1] = path[j].y;
-            p[j*3+2] = path[j].z;
+            p[j * 3] = path[j].x;
+            p[j * 3 + 1] = path[j].y;
+            p[j * 3 + 2] = path[j].z;
         }
         //printf("path %d: %f, %f, %f\n", i, p[0], p[1], p[2]);
     }
     printf("m done\n");
 }
 
-PolygonSet cam::convertPathsFromC(
-    double** paths, int numPaths, int* pathSizes)
+PolygonSet cam::convertPathsFromC(double** paths, int numPaths, int* pathSizes)
 {
     PolygonSet geometry;
     for (int i = 0; i < numPaths; ++i) {
@@ -89,7 +86,7 @@ PolygonSet cam::convertPathsFromC(
         double* p = paths[i];
         int l = pathSizes[i];
         for (int j = 0; j < l; ++j) {
-            newPath.push_back({lround(p[j*2]), lround(p[j*2+1])});
+            newPath.push_back({ lround(p[j * 2]), lround(p[j * 2 + 1]) });
             //printf("    %d, %d\n", newPath.back().x(), newPath.back().y());
         }
     }
