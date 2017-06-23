@@ -171,9 +171,40 @@ val getRawPaths(double scale, const val& v, bool destroy)
     return toRawPaths(scale, Converter{ scale, v, destroy });
 }
 
+val pocket(double scale, const val& v, bool destroy, double cutterDia, double stepover, bool climb, int arcTolerance)
+{
+    PolygonSet current
+        = FlexScan::offset(*Converter{ scale, v, destroy }.ps, -cutterDia / 2 * scale, arcTolerance, true);
+    PolygonSet bounds = current;
+    std::vector<PolygonSet> reversedAllPaths;
+    while (!current.empty()) {
+        reversedAllPaths.push_back(current);
+        current = FlexScan::offset(current, -cutterDia * stepover / 100 * scale, arcTolerance, true);
+    }
+    PolygonSet allPaths;
+    for (auto it = reversedAllPaths.rbegin(); it != reversedAllPaths.rend(); ++it) {
+        for (auto& path : *it) {
+            if (!path.empty()) {
+                auto x = path[0];
+                auto y = path[1];
+                path.push_back(x);
+                path.push_back(y);
+                if (!climb)
+                    std::reverse(path.begin(), path.end());
+                allPaths.push_back(std::move(path));
+            }
+        }
+    }
+    auto result = val::object();
+    result.set("bounds", wrap(std::move(bounds)));
+    result.set("allPaths", wrap(std::move(allPaths)));
+    return result;
+}
+
 EMSCRIPTEN_BINDINGS(my_module)
 {
     function("clean", &clean);
     function("offset", &offset);
     function("getRawPaths", &getRawPaths);
+    function("pocket", &pocket);
 }
