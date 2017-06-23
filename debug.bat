@@ -5,6 +5,7 @@ if not exist %OUT_DIR% mkdir %OUT_DIR%
 cd build
 cmd /C em++                                                                             ^
         ../src/cam.cpp                                                                  ^
+        ../src/main.cpp                                                                 ^
         ../src/separateTabs.cpp                                                         ^
         ../src/vCarve.cpp                                                               ^
         -I ../../boost_1_62_0                                                           ^
@@ -16,6 +17,7 @@ cmd /C em++                                                                     
         -Wno-unused-parameter                                                           ^
         -Wno-unused-variable                                                            ^
         -Wno-logical-op-parentheses                                                     ^
+        --bind                                                                          ^
         -s ALLOW_MEMORY_GROWTH=1                                                        ^
         -s ASSERTIONS=0                                                                 ^
         -s DISABLE_EXCEPTION_CATCHING=1                                                 ^
